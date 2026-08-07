@@ -10,7 +10,7 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-white font-san">
       <Navbar />
       <Sidebar />
-      <div className="p-4 sm:ml-64 mt-14">
+      <div className="p-4 sm:ml-44 mt-14">
         {children}
       </div>
     </div>
