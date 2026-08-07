@@ -6,13 +6,13 @@ export default function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <div className="min-h-screen bg-white font-san">
-      <Navbar />
-      <Sidebar />
-      <div className="p-4 sm:ml-44 mt-14">
-        {children}
-      </div>
-    </div>
-  );
+    return (
+        <div className="min-h-screen bg-white font-san">
+            <Navbar />
+            <Sidebar />
+            <div className="p-4 sm:ml-40 mt-14">
+                {children}
+            </div>
+        </div>
+    );
 }
