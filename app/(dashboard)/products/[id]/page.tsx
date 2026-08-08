@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeftIcon, StarIcon } from "lucide-react";
 import Link from "next/link";
-import { redirect,notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { IProducts } from "../page";
 
 export default async function ProductDetail({
