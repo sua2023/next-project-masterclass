@@ -26,7 +26,19 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 export interface IProducts {
     id: number;
     category: string;
@@ -40,6 +52,7 @@ export interface IProducts {
     title: string;
 }
 export interface IFormProduct {
+    id: number;
     title: string;
     category: string;
     description: string;
@@ -49,7 +62,10 @@ export interface IFormProduct {
 export default function Product() {
     const [products, setProduct] = useState<IProducts[] | []>([])
     const [open, setOpen] = useState(false)
+    const router = useRouter()
+    const [isDelete, setIsDelete] = useState(false)
     const [form, setForm] = useState<IFormProduct>({
+        id: 0,
         title: "",
         category: "",
         description: "",
@@ -80,45 +96,115 @@ export default function Product() {
 
     const onSubmit = async () => {
         try {
-            const response = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(form)
-            });
+            if (form.id > 0) {
+                const response = await fetch(`${url}/${form.id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(form)
+                });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const result: IProducts = await response.json();
+
+                setProduct((prevProducts) =>
+                    prevProducts.map((p) => p.id === form.id ? result : p)
+                );
+                setOpen(false);
+                setForm({
+                    id: 0,
+                    title: "",
+                    description: "",
+                    category: "",
+                    image: "", price: 0
+                })
+            } else {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(form)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const result: IProducts = await response.json();
+
+                setProduct((prevProducts) => [result, ...prevProducts]);
+                setOpen(false);
+                setForm({
+                    id: 0,
+                    title: "",
+                    description: "",
+                    category: "",
+                    image: "", price: 0
+                })
             }
-            const result: IProducts = await response.json();
 
-            setProduct((prevProducts) => [result, ...prevProducts]);
-            setOpen(false);
-            setForm({
-                title: "",
-                description: "",
-                category: "",
-                image: "", price: 0
-            })
         } catch (error) {
             console.error("Error creating product:", error);
         }
     }
 
+    const handleDelete = async () => {
+        try {
+            console.log(form);
+            const response = await fetch(`${url}/${form.id}`, {
+                method: "DELETE",
+            });
 
+            if (response.status == 200) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            setProduct((prevProducts) =>
+                prevProducts.filter((p) => p.id !== form.id)
+            );
+            setIsDelete(false);
+            setForm({
+                id: 0,
+                title: "",
+                category: "",
+                description: "",
+                image: "",
+                price: 0
+            });
+        } catch (error) {
+            console.error("Error deleting product:", error);
+        }
+    }
+    // localhost:3000/products/1
+    // localhost:3000/products/detail?data=kdkdksdf
+    const handleDetails = (row: IProducts) => {
+        const productData = encodeURIComponent(JSON.stringify(row));
+        // router.push(`/products/detail?data=${productData}`);
+         window.history.pushState({ product: row }, "", "/products/detail");
+    }
     return (
         <div>
             <div className="relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default">
                 <div className="flex justify-between items-center p-2">
                     <h4>Product list</h4>
-                    <Dialog open={open} onOpenChange={setOpen}>
+                    <Dialog open={open} onOpenChange={() => {
+                        setOpen(!open);
+                        setForm({
+                            id: 0,
+                            title: "",
+                            description: "",
+                            category: "",
+                            image: "", price: 0
+                        })
+                    }}>
                         <DialogTrigger render={<Button variant="default" />}>
                             Add Product
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
-                                <DialogTitle>Add new product</DialogTitle>
+                                <DialogTitle>{form.id > 0 ? "Edit Product" : "Add Product"}</DialogTitle>
                             </DialogHeader>
                             <FieldGroup>
                                 <Field>
@@ -150,7 +236,9 @@ export default function Product() {
                                     <Button type="reset" variant="outline" onClick={() => setOpen(!open)}>
                                         Close
                                     </Button>
-                                    <Button type="button" onClick={onSubmit}>Submit</Button>
+                                    <Button type="button" onClick={onSubmit}>
+                                        {form.id > 0 ? "Save Changes" : "Submit"}
+                                    </Button>
                                 </Field>
                             </FieldGroup>
                         </DialogContent>
@@ -198,9 +286,17 @@ export default function Product() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent>
                                             <DropdownMenuGroup>
-                                                <DropdownMenuItem>Edit</DropdownMenuItem>
-                                                <DropdownMenuItem>Delete</DropdownMenuItem>
-                                                <DropdownMenuItem>Details</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => {
+                                                    setForm(row);
+                                                    setOpen(true);
+                                                }}>Edit</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => {
+                                                    setIsDelete(true);
+                                                    setForm(row);
+                                                }}>Delete</DropdownMenuItem>
+                                                {/* <DropdownMenuItem onClick={() => handleDetails(row)}>Details</DropdownMenuItem> */}
+
+                                                <DropdownMenuItem onClick={()=> router.push(`/products/${row.id}`)}>Details</DropdownMenuItem>
                                             </DropdownMenuGroup>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -210,7 +306,20 @@ export default function Product() {
                     </tbody>
                 </table>
             </div>
-
+            <AlertDialog open={isDelete} onOpenChange={() => setIsDelete(!isDelete)}>
+                <AlertDialogContent size="sm">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Do you want to delete this product?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>No</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Yes</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
